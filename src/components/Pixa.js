@@ -1,34 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import PixaInfo from './PixaInfo';
 import PixaInput from './PixaInput';
-import axios from "axios";
+import axios from 'axios';
 
 function Pixa() {
-    const [infoItem, SetInfoItem] = useState([]);
+    const [images, setImages] = useState([]);
+    const [category, setCategory] = useState('cats'); // ברירת מחדל cats
+
     useEffect(() => {
-        doApi('israel');
-    }, [])
-    const doApi = async (_picType) => {
-        SetInfoItem([])
-        let url = "https://pixabay.com/api/" + _picType;
-        try {
-            let resp = await axios.get(url)
-            console.log(resp.data);
-            SetInfoItem(resp.data[0])
+        doApi(category);
+    }, []);
+
+    const doApi = async (_category) => {
+        setImages([]);
+        setCategory(_category);
+        
+        if (!process.env.REACT_APP_API_KEY_PIXABAY) {
+            alert("API Key not found!");
+            return;
         }
-        catch (err) {
+        let url = `https://pixabay.com/api/?key=${process.env.REACT_APP_API_KEY_PIXABAY}&q=${_category}&image_type=photo&per_page=10`;
+        try {
+            let resp = await axios.get(url);
+            console.log(resp.data.hits);
+            setImages(resp.data.hits);
+        } catch (err) {
             console.log(err);
-            alert("There problem, come back latter");
+            alert("There is a problem, come back later");
         }
     };
+
     return (
-        <div>
-            <PixaInput doApi={doApi} />
-            {infoItem.forEach((item) => {
-                <PixaInfo item={item} />
-            })}
+        <div className="container">
+            <h2 className="mt-3">Pixabay Image Viewer</h2>
+            <PixaInput doApi={doApi} defaultValue={category} />
+            <div className="row mt-3">
+                {images.length ? images.map((item) => (
+                    <div key={item.id} className="col-md-4 mb-3">
+                        <PixaInfo item={item} />
+                    </div>
+                )) : (
+                    <div className="spinner-border text-primary" role="status">
+                        <span className="sr-only"></span>
+                    </div>
+                )}
+            </div>
         </div>
-    )
+    );
 }
 
-export default Pixa
+export default Pixa;
